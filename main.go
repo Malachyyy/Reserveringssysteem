@@ -21,7 +21,7 @@ func BeginScherm(w http.ResponseWriter, r *http.Request) {
 	}
 	tpl.ExecuteTemplate(w, "loginform.html", nil)
 
-	http.Redirect(w, r, "/Register", )
+	http.Redirect(w, r, "/Register", http.StatusSeeOther)
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
