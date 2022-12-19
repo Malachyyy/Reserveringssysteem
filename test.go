@@ -9,13 +9,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Global variable
+// Global variable for template
 var tmpl *template.Template
 var db *sql.DB
 
 func main() {
 	// Connect to database
-	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/testdb")
+	db, err := sql.Open("mysql", "FonteynDB:x%2N9lN2wRYFSEr5g&@tcp(db01.mysql.database.azure.com)/fonteyn-internal-db")
 	if err != nil {
 		fmt.Println("Failed to connecto database", err)
 	}
@@ -32,23 +32,44 @@ func main() {
 }
 
 func BeginScherm(w http.ResponseWriter, r *http.Request) {
-	// Show login form
-	err := tmpl.ExecuteTemplate(w, "loginform.html", nil)
-	if err != nil {
-		fmt.Println("Failed to execute loginform", err)
-	}
+	if r.Method == "GET" {
+		// Render the login form template
+		err := tmpl.ExecuteTemplate(w, "loginform.html", nil)
+		if err != nil {
+			fmt.Println("Failed to execute loginform", err)
+		}
+	} else if r.Method == "POST" {
+		// Parse the form data
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	r.ParseForm()
-	// Get the username and password from the request
-	username := r.FormValue("username")
-	password := r.FormValue("password")
+		// Get the username and password from the request
+		username := r.Form.Get("username")
+		password := r.Form.Get("password")
 
-	if err := CheckLogin(db, username, password); err == nil {
-		// If authentication is successful, return a success message
-		http.Redirect(w, r, "/login", http.StatusMovedPermanently)
-	} else {
-		// If authentication fails, return an error message
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		// Retrieve the user's credentials from the database
+		var dbUsername, dbPassword string
+		err = db.QueryRow("SELECT username, password FROM users WHERE username=?", username).Scan(&dbUsername, &dbPassword)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		// Compare the retrieved credentials with the provided credentials
+		if dbUsername == username && dbPassword == password {
+			// Credentials are correct, redirect to the login page
+			http.Redirect(w, r, "/login", http.StatusMovedPermanently)
+		} else {
+			// Credentials are incorrect, render an error message
+			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		}
 	}
 }
 
@@ -62,23 +83,4 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("Failed to execute Regristratieform", err)
 	}
-}
-
-func CheckLogin(db *sql.DB, username, password string) error {
-	var id int
-	var storedUsername string
-	var storedPassword string
-
-	err := db.QueryRow("SELECT id, username, password FROM users WHERE username=?", username).Scan(&id, &storedUsername, &storedPassword)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("invalid username or password")
-		}
-		return err
-	}
-	if password == storedPassword {
-		return nil
-	}
-
-	return fmt.Errorf("invalid login credentials")
 }
