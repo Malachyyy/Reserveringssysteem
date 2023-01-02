@@ -15,7 +15,7 @@ var db *sql.DB
 
 func main() {
 	// Connect to database
-	db, err := sql.Open("mysql", "FonteynDB:x%2N9lN2wRYFSEr5g&@tcp(db01.mysql.database.azure.com)/fonteyn-internal-db")
+	db, err := sql.Open("mysql", "FonteynDB:password@tcp(db01.mysql.database.azure.com)/fonteyn-internal-db")
 	if err != nil {
 		fmt.Println("Failed to connecto database", err)
 	}
