@@ -15,12 +15,11 @@ var db *sql.DB
 
 func main() {
 	// Connect to database
-	db, err := sql.Open("mysql", "FonteynDB:password@tcp(db01.mysql.database.azure.com)/fonteyn-internal-db")
+	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/testdb")
 	if err != nil {
 		fmt.Println("Failed to connecto database", err)
 	}
 	defer db.Close()
-	fmt.Println("Connection successfull!")
 
 	// Parse all templates in folder templates
 	tmpl, _ = template.ParseGlob("templates/*.html")
