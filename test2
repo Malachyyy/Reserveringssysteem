@@ -1,0 +1,51 @@
+package main
+
+import (
+	"database/sql"
+	"html/template"
+	"log"
+	"net/http"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+// Global variable for template
+var tmpl *template.Template
+
+func main() {
+	// Parse all templates in folder templates
+	tmpl, _ = template.ParseGlob("templates/*.html")
+
+	http.HandleFunc("/", Login)
+	http.HandleFunc("/Register", RegisterHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	tmpl.ExecuteTemplate(w, "loginform.html", nil)
+}
+
+func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl.ExecuteTemplate(w, "Regristratieform.html", nil)
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+		return
+	}
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/testdb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO users (username, password) VALUES (?, ?)", username, password)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
